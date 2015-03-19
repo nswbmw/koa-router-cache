@@ -1,0 +1,40 @@
+{
+  "name": "koa-router-cache",
+  "description": "Router cache middleware for koa. Useful for caching some pages like `/`.",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --no-timeouts test/*.js"
+  },
+  "keywords": [
+    "koa",
+    "router",
+    "route",
+    "routing",
+    "cache",
+    "memory",
+    "middleware"
+  ],
+  "dependencies": {
+    "memory-cache": "^0.1.1"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "koa": "*",
+    "koa-route": "*",
+    "koa-logger": "*",
+    "supertest": "*",
+    "async": "*"
+  },
+  "author": {
+    "name": "nswbmw",
+    "email": "nswbmw1992@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nswbmw/koa-router-cache.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nswbmw/koa-router-cache/issues"
+  }
+}
