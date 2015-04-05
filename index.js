@@ -21,7 +21,7 @@ module.exports = function (app, opts) {
   return function *cache(next) {
     var url = this.url;
     var method = this.method;
-    var condition =  opts[url].condition;
+    var condition = opts[url].condition;
 
     if ((method === 'GET') && (url in opts) && (condition ? condition.call(this) : true)) {
       var fresh = opts[url].get.call(this, _cache);
