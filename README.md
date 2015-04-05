@@ -18,6 +18,7 @@ Options {Object|Number->expire}:
 
 - expire: expire time, use `ms`. (Required)
 - prefix: event listener prefix for deleting the router cache. (Optional)
+- condition: function that return boolean, whether to cache this url, default true. (Optional)
 - get: custom getter function for get data from cache. (Optional)
 - set: custom setter function for set data to cache. (Optional)
 
@@ -57,6 +58,8 @@ app.listen(3000, function () {
   console.log('listening on 3000.');
 });
 ```
+
+More examples see test.
 
 ### Test
 

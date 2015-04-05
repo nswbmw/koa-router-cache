@@ -16,13 +16,14 @@ module.exports = function (app, opts) {
     app.on(evtName, function () {
       _cache.del(url);
     });
-  };
+  }
 
   return function *cache(next) {
     var url = this.url;
     var method = this.method;
+    var condition =  opts[url].condition;
 
-    if ((method === 'GET') && (url in opts)) {
+    if ((method === 'GET') && (url in opts) && (condition ? condition.call(this) : true)) {
       var fresh = opts[url].get.call(this, _cache);
       if (fresh) return;
 
@@ -53,11 +54,11 @@ function defaultCacheGet(cache) {
       if (key === 'header') {
         for (var header in value) {
           this.set(header, value[header]);
-        };
+        }
       } else {
         this[key] = value;
       }
-    };
+    }
     return true;
   }
 }

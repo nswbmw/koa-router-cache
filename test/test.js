@@ -174,4 +174,50 @@ describe('Test koa-router-cache', function () {
       }
     ], done);
   });
+
+  it('not cache /', function (done) {
+    var indexCount = 0;
+
+    var app = koa();
+    app.use(cache(app, {
+      '/': {
+        expire: 2 * 1000,
+        condition: function () {
+          return this.session && this.session.user;
+        }
+      }
+    }));
+    app.use(route.get('/', function* () {
+      this.type = 'json';
+      this.body = String(++indexCount);
+      if (indexCount === 2) {
+        indexCount = 0;
+        this.app.emit(this.url);
+      }
+    }));
+
+    async.series([
+      function (callback) {
+        request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
+      },
+      function (callback) {
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("2", callback);
+        }, 1000);
+      },
+      function (callback) {
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
+        }, 1500);
+      },
+      function (callback) {
+        request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("2", callback);
+      },
+      function (callback) {
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
+        }, 2500);
+      }
+    ], done);
+  });
 });

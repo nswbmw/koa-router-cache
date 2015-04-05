@@ -1,7 +1,7 @@
 {
   "name": "koa-router-cache",
   "description": "Router cache middleware for koa. Useful for caching some pages like `/`.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/mocha --no-timeouts test/*.js"
