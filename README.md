@@ -22,7 +22,7 @@ Options {Object|Number->expire}:
 - getter: custom getter function for get data from cache. (Optional)
 - setter: custom setter function for set data to cache. (Optional)
 
-**Warning**: If you cache `this.body`, make sure `this.body` is not a stream, check for source code how to config `get` and `set`.
+**Warning**: If you cache `this.body`, make sure `this.body` is not a stream, check for source code how to config `getter` and `setter`.
 
 ### Example
 
