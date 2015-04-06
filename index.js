@@ -9,8 +9,8 @@ module.exports = function (app, opts) {
     if ('number' === typeof opts[url]) {
       opts[url] = {expire: opts[url]};
     }
-    opts[url].get = ('function' === typeof opts[url].get) ? opts[url].get : defaultCacheGet;
-    opts[url].set = ('function' === typeof opts[url].set) ? opts[url].set : defaultCacheSet;
+    opts[url].getter = ('function' === typeof opts[url].getter) ? opts[url].getter : defaultCacheGet;
+    opts[url].setter = ('function' === typeof opts[url].setter) ? opts[url].setter : defaultCacheSet;
 
     var evtName = (opts[url].prefix || '') + url;
     app.on(evtName, function () {
@@ -23,13 +23,13 @@ module.exports = function (app, opts) {
     var method = this.method;
 
     if ((method === 'GET') && (url in opts) && (('function' === typeof opts[url].condition) ? opts[url].condition.call(this) : true)) {
-      var fresh = opts[url].get.call(this, _cache);
+      var fresh = opts[url].getter.call(this, _cache);
       if (fresh) return;
 
       yield* next;
 
       if (this.status === 200) {
-        opts[url].set.call(this, _cache, opts[url].expire);
+        opts[url].setter.call(this, _cache, opts[url].expire);
       }
     } else {
       yield* next;

@@ -54,14 +54,14 @@ describe('Test koa-router-cache', function () {
     app.use(cache(app, {
       '/': {
         prefix: 'cache_',
-        get: function (cache) {
+        getter: function (cache) {
           var cacheData = cache.get('cache_' + this.url);
           if (cacheData) {
             this.body = cacheData;
             return true;
           }
         },
-        set: function (cache) {
+        setter: function (cache) {
           cache.put('cache_' + this.url, this.response.body, 2 * 1000);
         }
       }

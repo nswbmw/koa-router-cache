@@ -19,8 +19,8 @@ Options {Object|Number->expire}:
 - expire: expire time, use `ms`. (Required)
 - prefix: event listener prefix for deleting the router cache. (Optional)
 - condition: function that return boolean, whether to cache this url, default true. (Optional)
-- get: custom getter function for get data from cache. (Optional)
-- set: custom setter function for set data to cache. (Optional)
+- getter: custom getter function for get data from cache. (Optional)
+- setter: custom setter function for set data to cache. (Optional)
 
 **Warning**: If you cache `this.body`, make sure `this.body` is not a stream, check for source code how to config `get` and `set`.
 
