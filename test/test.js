@@ -1,222 +1,187 @@
+'use strict';
+
 var koa = require('koa');
-var route = require('koa-route');
 var request = require('supertest');
-var cache = require('..');
 var async = require('async');
 
+var cache = require('..');
+var MemoryCache = cache.MemoryCache;
+var RedisCache = cache.RedisCache;
+
 describe('Test koa-router-cache', function () {
-
-  it('cache / with number expire', function (done) {
-    var indexCount = 0;
-
-    var app = koa();
-    app.use(cache(app, {
-      '/': 2 * 1000
-    }));
-    app.use(route.get('/', function* () {
-      this.type = 'json';
-      this.body = String(++indexCount);
-      if (indexCount === 2) {
-        indexCount = 0;
-        this.app.emit(this.url);
-      }
-    }));
-
-    async.series([
-      function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
-      },
-      function (callback) {
-        setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
-        }, 1000);
-      },
-      function (callback) {
-        setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("2", callback);
-        }, 1500);
-      },
-      function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("2", callback);
-      },
-      function (callback) {
-        setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
-        }, 2500);
-      }
-    ], done);
-  });
-
-  it('cache / with object options', function (done) {
-    var indexCount = 0;
+  it('memory cache', function (done) {
+    var count = 0;
 
     var app = koa();
     app.use(cache(app, {
-      '/': {
-        prefix: 'cache_',
-        getter: function (cache) {
-          var cacheData = cache.get('cache_' + this.url);
-          if (cacheData) {
-            this.body = cacheData;
+      'GET /': {
+        key: 'cache:index',
+        expire: 2 * 1000,
+        get: MemoryCache.get,
+        set: MemoryCache.set,
+        passthrough: function* (_cache) {
+          if (_cache == null) {
             return true;
           }
+          this.body = _cache;
+          return false;
         },
-        setter: function (cache) {
-          cache.put('cache_' + this.url, this.response.body, 2 * 1000);
-        }
+        evtName: 'clearIndexCache',
+        destroy: MemoryCache.destroy
       }
     }));
-    app.use(route.get('/', function* () {
-      this.body = String(++indexCount);
-      if (indexCount === 2) {
-        indexCount = 0;
-        this.app.emit('cache_' + this.url);
+    app.use(function* () {
+      this.body = count++;
+      if (count === 3) {
+        count = 0;
+        this.app.emit('clearIndexCache');
       }
-    }));
+    });
 
     async.series([
       function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
+        request(app.callback()).get('/').expect(200).expect("0", callback);
       },
       function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
+          request(app.callback()).get('/').expect(200).expect("0", callback);
         }, 1000);
       },
       function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("2", callback);
+          request(app.callback()).get('/').expect(200).expect("1", callback);
         }, 1500);
       },
       function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("2", callback);
-      },
-      function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-        }, 2500);
-      },
-      function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-      }
-    ], done);
-  });
-
-  it('cache / and /posts', function (done) {
-    var indexCount = 0;
-    var postsCount = 0;
-
-    var app = koa();
-    app.use(cache(app, {
-      '/': 2 * 1000,
-      '/posts': 2 * 1000
-    }));
-    app.use(route.get('/', function* () {
-      this.body = String(++indexCount);
-      if (indexCount === 2) {
-        indexCount = 0;
-        this.app.emit(this.url);
-      }
-    }));
-
-    app.use(route.get('/posts', function* () {
-      this.body = String(++postsCount);
-      if (postsCount === 3) {
-        postsCount = 0;
-        this.app.emit(this.url);
-      }
-    }));
-
-    async.series([
-      function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-      },
-      function (callback) {
-        request(app.callback()).get('/posts').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-      },
-      function (callback) {
-        setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
+          request(app.callback()).get('/').expect(200).expect("1", callback);
         }, 1000);
       },
       function (callback) {
-        request(app.callback()).get('/posts').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-      },
-      function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("2", callback);
+          request(app.callback()).get('/').expect(200).expect("2", callback);
         }, 1500);
       },
       function (callback) {
-        request(app.callback()).get('/posts').expect(200).expect('Content-Type', /plain/).expect("2", callback);
-      },
-      function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("2", callback);
-      },
-      function (callback) {
-        request(app.callback()).get('/posts').expect(200).expect('Content-Type', /plain/).expect("2", callback);
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).expect("2", callback);
+        }, 1000);
       },
       function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-        }, 2500);
-      },
-      function (callback) {
-        request(app.callback()).get('/posts').expect(200).expect('Content-Type', /plain/).expect("3", callback);
-      },
-      function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-      },
-      function (callback) {
-        setTimeout(function () {
-          request(app.callback()).get('/posts').expect(200).expect('Content-Type', /plain/).expect("1", callback);
-        }, 2500);
+          request(app.callback()).get('/').expect(200).expect("0", callback);
+        }, 1500);
       }
     ], done);
   });
 
-  it('not cache /', function (done) {
-    var indexCount = 0;
+  it('redis cache', function (done) {
+    var count = 0;
 
     var app = koa();
     app.use(cache(app, {
-      '/': {
+      'GET /': {
+        key: 'cache:index',
         expire: 2 * 1000,
-        condition: function () {
-          return this.session && this.session.user;
-        }
-      }
-    }));
-    app.use(route.get('/', function* () {
-      this.type = 'json';
-      this.body = String(++indexCount);
-      if (indexCount === 2) {
-        indexCount = 0;
-        this.app.emit(this.url);
+        get: RedisCache.get,
+        set: RedisCache.set,
+        passthrough: function* (_cache) {
+          if (_cache == null) {
+            return true;
+          }
+          this.body = _cache;
+          return false;
+        },
+        evtName: 'clearIndexCache',
+        destroy: RedisCache.destroy
       }
     }));
 
+    app.use(function* () {
+      this.body = {
+        count: count++
+      };
+      if (count === 3) {
+        count = 0;
+        this.app.emit('clearIndexCache');
+      }
+    });
+
     async.series([
       function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
+        request(app.callback()).get('/').expect(200).end(function (err, res) {
+          if (err) return callback(err);
+          if (!res.body || res.body.count !== 0) {
+            return callback('count should be 0');
+          }
+          callback();
+        });
       },
       function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("2", callback);
+          request(app.callback()).get('/').expect(200).end(function (err, res) {
+            if (err) return callback(err);
+            if (!res.body || res.body.count !== 0) {
+              return callback('count should be 0');
+            }
+            callback();
+          });
         }, 1000);
       },
       function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
+          request(app.callback()).get('/').expect(200).end(function (err, res) {
+            if (err) return callback(err);
+            if (!res.body || res.body.count !== 1) {
+              return callback('count should be 1');
+            }
+            callback();
+          });
         }, 1500);
       },
       function (callback) {
-        request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("2", callback);
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).end(function (err, res) {
+            if (err) return callback(err);
+            if (!res.body || res.body.count !== 1) {
+              return callback('count should be 1');
+            }
+            callback();
+          });
+        }, 1000);
       },
       function (callback) {
         setTimeout(function () {
-          request(app.callback()).get('/').expect(200).expect('Content-Type', /json/).expect("1", callback);
-        }, 2500);
+          request(app.callback()).get('/').expect(200).end(function (err, res) {
+            if (err) return callback(err);
+            if (!res.body || res.body.count !== 2) {
+              return callback('count should be 2');
+            }
+            callback();
+          });
+        }, 1500);
+      },
+      function (callback) {
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).end(function (err, res) {
+            if (err) return callback(err);
+            if (!res.body || res.body.count !== 2) {
+              return callback('count should be 2');
+            }
+            callback();
+          });
+        }, 1000);
+      },
+      function (callback) {
+        setTimeout(function () {
+          request(app.callback()).get('/').expect(200).end(function (err, res) {
+            if (err) return callback(err);
+            if (!res.body || res.body.count !== 0) {
+              return callback('count should be 0');
+            }
+            callback();
+          });
+        }, 1500);
       }
     ], done);
   });

@@ -1,6 +1,10 @@
 ## koa-router-cache
 
-Router cache middleware for koa. Useful for caching some pages like `/`.
+Router cache middleware for koa.
+
+### Release notes
+
+koa-router-cache v1.0.0 released, v0.3.0 readme see [v0.3.0_README.md](https://github.com/nswbmw/koa-router-cache/blob/master/v0.3.0_README.md).
 
 ### Install
 
@@ -14,38 +18,55 @@ npm i koa-router-cache --save
 cache(app, options)
 ```
 
-Options {Object|Number->expire}:
+Options:
 
-- expire: expire time, use `ms`. (Required)
-- prefix: event listener prefix for deleting the router cache. (Optional)
-- condition: function that return boolean, whether to cache this url, default true. (Optional)
-- getter: custom getter function for get data from cache. (Optional)
-- setter: custom setter function for set data to cache. (Optional)
-
-**Warning**: If you cache `this.body`, make sure `this.body` is not a stream, check for source code how to config `getter` and `setter`.
+- key: `{String|GeneratorFunction}` cache key. (Required)
+- expire: `{Number}` expire time, in `ms`. (Required)
+- get: `{GeneratorFunction}` custom getter function for getting data from cache. (Required)
+- set: `{GeneratorFunction}` custom setter function for setting data to cache. (Required)
+- passthrough: `{GeneratorFunction}` whether pass request through, return `Boolean`. (Required)
+- evtName: `{String}` event name for destroy cache. (Optional)
+- destroy: `{function}` destroy cache. (Optional)
+- pathToRegexp `{Object}` pathToRegexp options, see `https://github.com/pillarjs/path-to-regexp#usage`. (Optional)
 
 ### Example
 
-```
-DEBUG=* node example
-```
-**example.js**
+`koa-router-cache` build-in simple `MemoryCache` and `RedisCache`, also you can write by yourself.
+
+**MemoryCache**
 
 ```
+'use strict';
+
 var app = require('koa')();
-var cache = require('./');
+var cache = require('../');
+var MemoryCache = cache.MemoryCache;
 
 var count = 0;
 
 app.use(cache(app, {
-  '/': 5 * 1000
+  'GET /': {
+    key: 'cache:index',
+    expire: 2 * 1000,
+    get: MemoryCache.get,
+    set: MemoryCache.set,
+    passthrough: function* (_cache) {
+      if (_cache == null) {
+        return true;
+      }
+      this.body = _cache;
+      return false;
+    },
+    evtName: 'clearIndexCache',
+    destroy: MemoryCache.destroy
+  }
 }));
 
 app.use(function* () {
   this.body = count++;
-  if (count === 5) {
+  if (count === 3) {
     count = 0;
-    this.app.emit(this.url);
+    this.app.emit('clearIndexCache');
   }
 });
 
@@ -54,7 +75,49 @@ app.listen(3000, function () {
 });
 ```
 
-More examples see test.
+**RedisCache**
+
+```
+'use strict';
+
+var app = require('koa')();
+var cache = require('../');
+var RedisCache = cache.RedisCache;
+
+var count = 0;
+
+app.use(cache(app, {
+  'GET /': {
+    key: 'cache:index',
+    expire: 2 * 1000,
+    get: RedisCache.get,
+    set: RedisCache.set,
+    passthrough: function* (_cache) {
+      if (_cache == null) {
+        return true;
+      }
+      this.body = _cache;
+      return false;
+    },
+    evtName: 'clearIndexCache',
+    destroy: RedisCache.destroy
+  }
+}));
+
+app.use(function* () {
+  this.body = {
+    count: count++
+  };
+  if (count === 3) {
+    count = 0;
+    this.app.emit('clearIndexCache');
+  }
+});
+
+app.listen(3000, function () {
+  console.log('listening on 3000.');
+});
+```
 
 ### Test
 
