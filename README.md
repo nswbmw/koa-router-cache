@@ -82,7 +82,7 @@ app.listen(3000, function () {
 
 var app = require('koa')();
 var cache = require('../');
-var RedisCache = cache.RedisCache;
+var RedisCache = cache.RedisCache();// or RedisCache(client)
 
 var count = 0;
 

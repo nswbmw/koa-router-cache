@@ -6,7 +6,7 @@ var async = require('async');
 
 var cache = require('..');
 var MemoryCache = cache.MemoryCache;
-var RedisCache = cache.RedisCache;
+var RedisCache = cache.RedisCache();
 
 describe('Test koa-router-cache', function () {
   it('memory cache', function (done) {

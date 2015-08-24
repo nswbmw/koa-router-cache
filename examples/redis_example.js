@@ -2,7 +2,7 @@
 
 var app = require('koa')();
 var cache = require('../');
-var RedisCache = cache.RedisCache;
+var RedisCache = cache.RedisCache();
 
 var count = 0;
 
