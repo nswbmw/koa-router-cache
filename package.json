@@ -1,7 +1,7 @@
 {
   "name": "koa-router-cache",
   "description": "Router cache middleware for koa.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "lib/index.js",
   "scripts": {
     "test": "DEBUG=koa-generic-cache:* ./node_modules/.bin/mocha --harmony --no-timeouts test/*.js"

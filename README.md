@@ -50,13 +50,7 @@ app.use(cache(app, {
     expire: 2 * 1000,
     get: MemoryCache.get,
     set: MemoryCache.set,
-    passthrough: function* (_cache) {
-      if (_cache == null) {
-        return true;
-      }
-      this.body = _cache;
-      return false;
-    },
+    passthrough: MemoryCache.passthrough,
     evtName: 'clearIndexCache',
     destroy: MemoryCache.destroy
   }
@@ -92,13 +86,7 @@ app.use(cache(app, {
     expire: 2 * 1000,
     get: RedisCache.get,
     set: RedisCache.set,
-    passthrough: function* (_cache) {
-      if (_cache == null) {
-        return true;
-      }
-      this.body = _cache;
-      return false;
-    },
+    passthrough: RedisCache.passthrough,
     evtName: 'clearIndexCache',
     destroy: RedisCache.destroy
   }
