@@ -107,6 +107,52 @@ app.listen(3000, function () {
 });
 ```
 
+another usage:
+
+```
+// find users by uids
+'POST /uids': {
+  key: function* () {
+    return this.url;
+  },
+  expire: 5 * 60 * 1000,
+  get: function* (key) {
+    var body = this.request.body;
+    var pass = [];
+    var self = this;
+    self._body = [];
+    yield body.map(function* (uid) {
+      var user = yield redis.get(key + ':' + uid);
+      if (user) {
+        self._body.push(JSON.parse(user));
+      } else {
+        pass.push(uid);
+      }
+    });
+    debug('get %s -> %j', key, this._body);
+
+    return pass;
+  },
+  passthrough: function* (pass) {
+    if (!pass.length) {
+      this.body = this._body;
+      return false;
+    }
+    debug('pass -> %j', pass);
+    this.request.body = pass;
+
+    return true;
+  },
+  set: function* (key, value, expire) {
+    yield value.map(function* (user) {
+      yield redis.set(key + ':' + user._id, JSON.stringify(user), 'PX', expire);
+    });
+    debug('set %s: %j, %s ms', key, value, expire);
+    this.body = this._body.concat(this.body);
+  }
+}
+```
+
 ### Test
 
 ```
