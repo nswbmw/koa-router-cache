@@ -37,13 +37,13 @@ Options:
 
 ```
 'use strict';
-
+ 
 var app = require('koa')();
-var cache = require('../');
+var cache = require('koa-router-cache');
 var MemoryCache = cache.MemoryCache;
-
+ 
 var count = 0;
-
+ 
 app.use(cache(app, {
   'GET /': {
     key: 'cache:index',
@@ -55,15 +55,17 @@ app.use(cache(app, {
     destroy: MemoryCache.destroy
   }
 }));
-
+ 
 app.use(function* () {
-  this.body = count++;
-  if (count === 3) {
-    count = 0;
-    this.app.emit('clearIndexCache');
+  if (this.path === '/') {
+    this.body = count++;
+    if (count === 3) {
+      count = 0;
+      this.app.emit('clearIndexCache');
+    }  
   }
 });
-
+ 
 app.listen(3000, function () {
   console.log('listening on 3000.');
 });
@@ -75,7 +77,7 @@ app.listen(3000, function () {
 'use strict';
 
 var app = require('koa')();
-var cache = require('../');
+var cache = require('koa-router-cache');
 var RedisCache = cache.RedisCache();// or RedisCache(client)
 
 var count = 0;
@@ -93,12 +95,14 @@ app.use(cache(app, {
 }));
 
 app.use(function* () {
-  this.body = {
-    count: count++
-  };
-  if (count === 3) {
-    count = 0;
-    this.app.emit('clearIndexCache');
+  if (this.path === '/') {
+    this.body = {
+      count: count++
+    };
+    if (count === 3) {
+      count = 0;
+      this.app.emit('clearIndexCache');
+    }
   }
 });
 
