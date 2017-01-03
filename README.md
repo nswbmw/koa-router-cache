@@ -1,10 +1,6 @@
 ## koa-router-cache
 
-Router cache middleware for koa.
-
-### Release notes
-
-koa-router-cache v1.0.0 released, v0.3.0 readme see [v0.3.0_README.md](https://github.com/nswbmw/koa-router-cache/blob/master/v0.3.0_README.md).
+Router cache middleware for koa@1.
 
 ### Install
 
@@ -24,7 +20,9 @@ Options:
 - expire: `{Number}` expire time, in `ms`. (Required)
 - get: `{GeneratorFunction}` custom getter function for getting data from cache. (Required)
 - set: `{GeneratorFunction}` custom setter function for setting data to cache. (Required)
-- passthrough: `{GeneratorFunction}` whether pass request through, return `Boolean`. (Required)
+- passthrough: `{GeneratorFunction}` whether pass request through, return an object. (Required)
+  - shouldCache: {Boolean} whether cache this result
+  - shouldPass: {Boolean} whether pass this request through
 - evtName: `{String}` event name for destroy cache. (Optional)
 - destroy: `{function}` destroy cache. (Optional)
 - pathToRegexp `{Object}` pathToRegexp options, see `https://github.com/pillarjs/path-to-regexp#usage`. (Optional)
@@ -114,45 +112,35 @@ app.listen(3000, function () {
 another usage:
 
 ```
-// find users by uids
-'POST /uids': {
-  key: function* () {
-    return this.url;
-  },
-  expire: 5 * 60 * 1000,
-  get: function* (key) {
-    var body = this.request.body;
-    var pass = [];
-    var self = this;
-    self._body = [];
-    yield body.map(function* (uid) {
-      var user = yield redis.get(key + ':' + uid);
-      if (user) {
-        self._body.push(JSON.parse(user));
-      } else {
-        pass.push(uid);
+// Guests share one index page cache
+GET /': {
+  key: 'cache:index',
+  expire: 10 * 1000,
+  get: MemoryCache.get,
+  set: MemoryCache.set,
+  destroy: MemoryCache.destroy,
+  passthrough: function* passthrough(_cache) {
+    // Guests
+    if (!this.session || !this.session.user) {
+      if (_cache == null) {
+        return {
+          shouldCache: true,
+          shouldPass: true
+        };
       }
-    });
-    debug('get %s -> %j', key, this._body);
-
-    return pass;
-  },
-  passthrough: function* (pass) {
-    if (!pass.length) {
-      this.body = this._body;
-      return false;
+      this.type = 'text/html; charset=utf-8';
+      this.set('content-encoding', 'gzip');
+      this.body = _cache;
+      return {
+        shouldCache: true,
+        shouldPass: false
+      };
     }
-    debug('pass -> %j', pass);
-    this.request.body = pass;
-
-    return true;
-  },
-  set: function* (key, value, expire) {
-    yield value.map(function* (user) {
-      yield redis.set(key + ':' + user._id, JSON.stringify(user), 'PX', expire);
-    });
-    debug('set %s: %j, %s ms', key, value, expire);
-    this.body = this._body.concat(this.body);
+    // Logged-in users
+    return {
+      shouldCache: false,
+      shouldPass: true
+    };
   }
 }
 ```
